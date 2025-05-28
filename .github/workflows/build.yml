@@ -46,7 +46,7 @@ jobs:
 
           echo 'OWNER="KHAssetsHD"' >> download_assets.sh
           echo 'REPO="days"' >> download_assets.sh
-          echo 'REF="refs/heads/main"' >> download_assets.sh
+          echo 'REF="main"' >> download_assets.sh
           echo '' >> download_assets.sh
           echo 'for FILE in "${FILES[@]}"; do' >> download_assets.sh
           echo '  EXT="${FILE##*.}"' >> download_assets.sh
