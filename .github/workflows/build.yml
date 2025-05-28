@@ -37,6 +37,7 @@ jobs:
             ! -path './.github/*' \
             ! -name ".gitignore" \
             ! -name ".gitattributes" \
+            ! -name "download_assets.sh" \
             | sed 's|^\./||' | while read FILE; do
               printf '  "%s"\n' "$FILE" >> download_assets.sh
           done
@@ -46,11 +47,19 @@ jobs:
           echo 'OWNER="KHAssetsHD"' >> download_assets.sh
           echo 'REPO="days"' >> download_assets.sh
           echo 'REF="refs/heads/main"' >> download_assets.sh
-          echo 'BASE_URL="https://media.githubusercontent.com/media/$OWNER/$REPO/$REF"' >> download_assets.sh
           echo '' >> download_assets.sh
           echo 'for FILE in "${FILES[@]}"; do' >> download_assets.sh
-          echo '  URL="$BASE_URL/$FILE?download=true"' >> download_assets.sh
-          echo '  DEST="./$FILE"' >> download_assets.sh
+          echo '  EXT="${FILE##*.}"' >> download_assets.sh
+          echo '  if [ "$EXT" = "mp4" ]; then' >> download_assets.sh
+          echo '    BASE_URL="https://media.githubusercontent.com/media/$OWNER/$REPO/refs/heads/$REF"' >> download_assets.sh
+          echo '  else' >> download_assets.sh
+          echo '    BASE_URL="https://raw.githubusercontent.com/$OWNER/$REPO/$REF"' >> download_assets.sh
+          echo '  fi' >> download_assets.sh
+          echo '  URL="$BASE_URL/$FILE"' >> download_assets.sh
+          echo '  if [ "$EXT" = "mp4" ]; then' >> download_assets.sh
+          echo '    URL="$URL?download=true"' >> download_assets.sh
+          echo '  fi' >> download_assets.sh
+          echo '  DEST="./assets/$REPO/$FILE"' >> download_assets.sh
           echo '  echo "⬇️ Downloading $FILE..."' >> download_assets.sh
           echo '  mkdir -p "$(dirname "$DEST")"' >> download_assets.sh
           echo '  curl -L --fail -o "$DEST" "$URL"' >> download_assets.sh
@@ -66,7 +75,9 @@ jobs:
           chmod +x download_assets.sh
 
       - name: Package downloader
-        run: zip download_assets.zip download_assets.sh
+        run: |
+          mv download_assets.sh download_assets_linux.sh
+          zip download_assets.zip download_assets_linux.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
