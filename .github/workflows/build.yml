@@ -74,10 +74,50 @@ jobs:
 
           chmod +x download_assets.sh
 
+      - name: Generate download_assets.bat
+        run: |
+          echo '@echo off' > download_assets.bat
+          echo 'setlocal enabledelayedexpansion' >> download_assets.bat
+          echo 'set OWNER=KHAssetsHD' >> download_assets.bat
+          echo 'set REPO=days' >> download_assets.bat
+          echo 'set REF=main' >> download_assets.bat
+          echo '' >> download_assets.bat
+          echo 'REM File list' >> download_assets.bat
+          echo 'set FILES=' >> download_assets.bat
+          for FILE in $(cat all_files.txt); do
+            ESCAPED=$(echo "$FILE" | sed 's/\\/\\\\/g' | sed 's/"/""/g')
+            echo 'set FILES=!FILES! "'$ESCAPED'"' >> download_assets.bat
+          done
+          echo '' >> download_assets.bat
+
+          echo 'for %%F in (!FILES!) do (' >> download_assets.bat
+          echo '  set "FILE=%%~F"' >> download_assets.bat
+          echo '  set "EXT=%%~xF"' >> download_assets.bat
+          echo '  if /I "!EXT!"==".mp4" (' >> download_assets.bat
+          echo '    set "BASE_URL=https://media.githubusercontent.com/media/%OWNER%/%REPO%/refs/heads/%REF%"' >> download_assets.bat
+          echo '    set "URL=!BASE_URL!/!FILE!?download=true"' >> download_assets.bat
+          echo '  ) else (' >> download_assets.bat
+          echo '    set "BASE_URL=https://raw.githubusercontent.com/%OWNER%/%REPO%/%REF%"' >> download_assets.bat
+          echo '    set "URL=!BASE_URL!/!FILE!"' >> download_assets.bat
+          echo '  )' >> download_assets.bat
+          echo '' >> download_assets.bat
+          echo '  echo ⬇️ Downloading !FILE!' >> download_assets.bat
+          echo '  powershell -Command "New-Item -ItemType Directory -Force -Path (Split-Path -Parent \"!FILE!\") > $null"' >> download_assets.bat
+          echo '  powershell -Command "Invoke-WebRequest -Uri \"!URL!\" -OutFile \"!FILE!\""' >> download_assets.bat
+          echo '  if exist "!FILE!" (' >> download_assets.bat
+          echo '    echo ✅ Saved to: !FILE!' >> download_assets.bat
+          echo '  ) else (' >> download_assets.bat
+          echo '    echo ❌ Failed to download: !FILE!' >> download_assets.bat
+          echo '  )' >> download_assets.bat
+          echo ')' >> download_assets.bat
+          echo 'echo 🏁 All done.' >> download_assets.bat
+
       - name: Package downloader
         run: |
-          mv download_assets.sh download_assets_linux.sh
-          zip download_assets.zip download_assets_linux.sh
+          cp download_assets.sh download_assets_linux.sh
+          cp download_assets.sh download_assets_macos.sh
+          mv download_assets.bat download_assets_windows.bat
+          zip download_assets.zip download_assets_linux.sh download_assets_macos.sh download_assets_windows.bat
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
