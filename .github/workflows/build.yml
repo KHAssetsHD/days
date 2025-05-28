@@ -1,4 +1,4 @@
-name: Auto Release on Every Commit
+name: Auto Release
 
 on:
   push:
@@ -6,26 +6,28 @@ on:
       - main
 
 jobs:
-  create-release:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get short SHA
+      - name: Install 7z
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full
+
+      - name: Get commit short SHA
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Create zip archive of the repo
-        run: |
-          zip -r release.zip . -x ".git/*" ".github/*"
+      - name: Compress repo using 7z (excluding .git and workflows)
+        run: 7z a release.7z . -xr!.git -xr!.github
 
-      - name: Create GitHub release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: "Release ${{ steps.vars.outputs.sha_short }}"
           tag_name: "commit-${{ steps.vars.outputs.sha_short }}"
-          body: "Automated release for commit ${{ steps.vars.outputs.sha_short }}"
-          files: release.zip
+          body: "Auto release for commit ${{ steps.vars.outputs.sha_short }}"
+          files: release.7z
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
